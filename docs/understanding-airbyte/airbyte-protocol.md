@@ -33,7 +33,7 @@ The Airbyte Protocol is versioned independently of the Airbyte Platform, and the
 | `v0.5.0` | 2023-11-13     | [49](https://github.com/airbytehq/airbyte-protocol/pull/49)                                                               | `AirbyteStateStatsMessage` added.                                                 |
 | `v0.4.2` | 2023-04-12     | [46](https://github.com/airbytehq/airbyte-protocol/pull/46)                                                               | `AirbyteAnalyticsTraceMessage` added.                                             |
 | `v0.4.1` | 2023-08-14     | [41](https://github.com/airbytehq/airbyte-protocol/pull/41) & [44](https://github.com/airbytehq/airbyte-protocol/pull/44) | Various bug fixes.                                                                |
-| `v0.3.6` | 2023-04-21     | [34](https://github.com/airbytehq/airbyte-protocol/pull/34)                                                               | Add explicit `AirbyteStreamStatus` statue values.                                 |
+| `v0.3.6` | 2023-04-21     | [34](https://github.com/airbytehq/airbyte-protocol/pull/34)                                                               | Add explicit `AirbyteStreamStatus` status values.                                 |
 | `v0.3.5` | 2023-04-13     | [30](https://github.com/airbytehq/airbyte-protocol/pull/30)                                                               | Fix indentation.                                                                  |
 | `v0.3.4` | 2023-04-13     | [28](https://github.com/airbytehq/airbyte-protocol/pull/28)                                                               | Fix Indentation.                                                                  |
 | `v0.3.3` | 2023-04-12     | [18](https://github.com/airbytehq/airbyte-protocol/pull/18)                                                               | `AirbyteStreamStatusMessage` added.                                               |
@@ -139,7 +139,7 @@ read(Config, ConfiguredAirbyteCatalog, State) -> Stream<AirbyteRecordMessage | A
 
 ### Discover
 
-The `discover` method detects and describes the _structure_ of the data in the data store and which Airbyte configurations can be applied to that data. For example, given a Postges source and valid Config, `discover` would return a list of available tables as streams.
+The `discover` method detects and describes the _structure_ of the data in the data store and which Airbyte configurations can be applied to that data. For example, given a Postgres source and valid Config, `discover` would return a list of available tables as streams.
 
 #### Input:
 
@@ -164,7 +164,7 @@ The `discover` method detects and describes the _structure_ of the data in the d
 1. `message stream` - An iterator of `AirbyteRecordMessage`s and `AirbyteStateMessage`s piped to the Data Channel Egress i.e: stdout.
    - A source outputs `AirbyteStateMessages` in order to allow checkpointing data replication. State is described in more detail below in the [State & Checkpointing](#state--checkpointing) section.
    - Only `AirbyteRecordMessage`s that contain streams that are in the catalog will be processed. Those that do not will be ignored. See [Schema Mismatches](#schema-mismatches) for more details.
-   - AirbyteRecordMessages from multiple streams can be multiplexed/mixed together, and do not need to be emitted serially as a group.
+   - `AirbyteRecordMessage`s from multiple streams can be multiplexed/mixed together, and do not need to be emitted serially as a group.
 
 ## Destination
 
@@ -185,7 +185,7 @@ For the sake of brevity, we will not re-describe `spec` and `check`. They are ex
 #### Input:
 
 1. `config` - A configuration JSON object that has been validated using the `ConnectorSpecification`.
-2. `configured catalog` - A [`ConfiguredAirbyteCatalog`](https://docs.airbyte.com/understanding-airbyte/beginners-guide-to-catalog#configuredairbytecatalog). This is a modified version of the `catalog` returned by the `discover` command. Any `AirbyteRecordMessages`s that the destination receives that do _not_ match the structure described in the `catalog` will fail.
+2. `configured catalog` - A [`ConfiguredAirbyteCatalog`](https://docs.airbyte.com/understanding-airbyte/beginners-guide-to-catalog#configuredairbytecatalog). This is a modified version of the `catalog` returned by the `discover` command. Any `AirbyteRecordMessage`s that the destination receives that do _not_ match the structure described in the `catalog` will fail.
 3. `message stream` - \(this stream is consumed on stdin--it is not passed as an arg\). It will receive a stream of JSON-serialized `AirbyteMesssage`.
 
 #### Output:
@@ -201,7 +201,7 @@ This concludes the overview of the Actor Interface. The remaining content will d
 
 The specification allows the Actor to share information about itself.
 
-The `connectionSpecification` is [JSONSchema](https://json-schema.org) that describes what information needs to the actor for it operate. e.g. If using a Postgres Source, the `ConnectorSpecification` would specify that a `hostname`, `port`, and `password` are required in order for the connector to function. This JSONSchema can be used to validate that the provided inputs are valid. e.g. If `port` is one of the fields and the JsonSchema in the `connectionSpecification` specifies that this field should be a number, if a user inputs "airbyte", they will receive an error. For connection specification, Airbyte adheres to JsonSchema validation rules. The Airbyte implementation of the Protocol is able to render this JSONSchema to produce a form for users to fill in the information for an Actor.
+The `connectionSpecification` is [JSON Schema](https://json-schema.org) that describes what information needs to the actor for it operate. e.g. If using a Postgres Source, the `ConnectorSpecification` would specify that a `hostname`, `port`, and `password` are required in order for the connector to function. This JSON Schema can be used to validate that the provided inputs are valid. e.g. If `port` is one of the fields and the JSON Schema in the `connectionSpecification` specifies that this field should be a number, if a user inputs "airbyte", they will receive an error. For connection specification, Airbyte adheres to JSON Schema validation rules. The Airbyte implementation of the Protocol is able to render this JSON Schema to produce a form for users to fill in the information for an Actor.
 
 The specification also contains information about what features the Actor supports.
 
@@ -267,7 +267,7 @@ ConnectorSpecification:
 
 An `AirbyteCatalog` is a struct that is produced by the `discover` action of a source. It is a list of `AirbyteStream`s. Each `AirbyteStream` describes the data available to be synced from the source. After a source produces an `AirbyteCatalog` or `AirbyteStream`, they should be treated as read only. A `ConfiguredAirbyteCatalog` is a list of `ConfiguredAirbyteStream`s. Each `ConfiguredAirbyteStream` describes how to sync an `AirbyteStream`.
 
-Each `AirbyteStream` of these contain a `name` and `json_schema` field. The `json_schema` field accepts any valid JsonSchema and describes the structure of a stream. This data model is intentionally flexible. That can make it a little hard at first to mentally map onto your own data, so we provide some examples below:
+Each `AirbyteStream` of these contains a `name` and `json_schema` field. The `json_schema` field accepts any valid JSON Schema and describes the structure of a stream. This data model is intentionally flexible. That can make it a little hard at first to mentally map onto your own data, so we provide some examples below:
 _ If we are using a data source that is a traditional relational database, each table in that database would map to an `AirbyteStream`. Each column in the table would be a key in the `properties` field of the `json_schema` field.
 _ e.g. If we have a table called `users` which had the columns `name` and `age` (the age column is optional) the `AirbyteCatalog` would look like this:
 
@@ -359,14 +359,14 @@ The `AirbyteStream` represents this concept through an optional field called `na
 
 This section will document the meaning of each field in an `AirbyteStream`
 
-- `json_schema` - This field contains a [JsonSchema](https://json-schema.org/understanding-json-schema) representation of the schema of the stream.
+- `json_schema` - This field contains a [JSON Schema](https://json-schema.org/understanding-json-schema) representation of the schema of the stream.
 - `supported_sync_modes` - The sync modes that the stream supports. By default, all sources support `FULL_REFRESH`. Even if this array is empty, it can be assumed that a source supports `FULL_REFRESH`. The allowed sync modes are `FULL_REFRESH` and `INCREMENTAL`.
 - `source_defined_cursor` - If a source supports the `INCREMENTAL` sync mode, and it sets this field to true, it is responsible for determining internally how it tracks which records in a source are new or updated since the last sync. When set to `true`, `default_cursor_field` should also be set.
 - `default_cursor_field` - If a source supports the `INCREMENTAL` sync mode, it may, optionally, set this field. If this field is set, and the user does not override it with the `cursor_field` attribute in the `ConfiguredAirbyteStream` \(described below\), this field will be used as the cursor. It is an array of keys to a field in the schema.
 
 #### Data Types
 
-Airbyte maintains a set of types that intersects with those of JSONSchema but also includes its own. More information on supported data types can be found in [Supported Data Types](supported-data-types.md).
+Airbyte maintains a set of types that intersects with those of JSON Schema but also includes its own. More information on supported data types can be found in [Supported Data Types](supported-data-types.md).
 
 ### ConfiguredAirbyteStream
 
@@ -502,7 +502,7 @@ There are 3 types of state: Stream, Global, and Legacy.
 
 - **Stream** represents Sources where there is complete isolation between stream states. In these cases, the state for each stream will be emitted in its own state message. In other words, if there are 3 streams replicated during a sync, the Source would emit at least 3 state message (1 per stream). The state of the Source is the sum of all the stream states.
 - **Global** represents Sources where this shared state across streams. In these cases each state message contains the whole state for the connection. The `shared_state` field is where any information that is shared across streams must go. The `stream_states` field contains a list of objects that contain a Stream Descriptor and the state information for that stream that is stream-specific. There are drawbacks to this state type, so it should only be used in cases where a shared state between streams is unavoidable.
-- **Legacy** exists for backwards compatibility. In this state type, the state object is totally a black box. The only inference tha can be drawn from the state object is that if it is null, then there is no state for the entire Source. **All current legacy cases are being ported to stream or global. Once they are, it will be removed.**
+- **Legacy** exists for backwards compatibility. In this state type, the state object is totally a black box. The only inference that can be drawn from the state object is that if it is null, then there is no state for the entire Source. **All current legacy cases are being ported to stream or global. Once they are, it will be removed.**
 
 This table breaks down attributes of these state types.
 
@@ -556,7 +556,7 @@ These principles are intended to produce simple overall system behavior, and mov
 
 ### Common
 
-For forwards compatibility all messages should allow for unknown properties (in JSONSchema parlance that is `additionalProperties: true`).
+For forwards compatibility all messages should allow for unknown properties (in JSON Schema parlance that is `additionalProperties: true`).
 
 Messages are structs emitted by actors.
 
@@ -729,7 +729,7 @@ AirbyteGlobalState:
 
 ### AirbyteConnectionStatus Message
 
-This message reports whether an Actor was able to connect to its underlying data store with all the permissions it needs to succeed. The goal is that if a successful stat is returned, that the user should be confident that using that Actor will succeed. The depth of the verification is not specified in the protocol. More robust verification is preferred but going too deep can create undesired performance tradeoffs.
+This message reports whether an Actor was able to connect to its underlying data store with all the permissions it needs to succeed. The goal is that if a successful status is returned, that the user should be confident that using that Actor will succeed. The depth of the verification is not specified in the protocol. More robust verification is preferred but going too deep can create undesired performance tradeoffs.
 
 ```yaml
 AirbyteConnectionStatus:
@@ -866,7 +866,7 @@ AirbyteEstimateTraceMessage:
 
 #### AirbyteErrorTraceMessage
 
-Error Trace Messages are used when a sync is about to fail and the connector can provide meaningful information to the orhcestrator or user about what to do next.
+Error Trace Messages are used when a sync is about to fail and the connector can provide meaningful information to the orchestrator or user about what to do next.
 
 Of note, an `internal_message` might be an exception code, but an `external_message` is meant to be user-facing, e.g. "Your API Key is invalid".
 
